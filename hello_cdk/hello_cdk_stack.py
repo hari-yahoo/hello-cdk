@@ -9,7 +9,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-AWS_ACCOUNT_ID = 23
+AWS_ACCOUNT_ID = 730335563531
 name_prefix = "CourseStatusUpdate"
 name_suffix = "-Staging"
 
@@ -20,13 +20,13 @@ class HelloCdkStack(Stack):
 
         # The code that defines your stack goes here
 
-        # api_role, lambda_role = self.createRoles()
+        api_role, lambda_role = self.createRoles()
 
         dlq = self.createDeadLetterQueue(name_prefix + "DLQ" + name_suffix + ".fifo")
 
         queue = self.createFifoQueue(name_prefix + "Queue" + name_suffix + ".fifo", dlq)
 
-        # func = self.createLambdaFunction(name_prefix + "Function" + name_suffix, queue)
+        func = self.createLambdaFunction(name_prefix + "Function" + name_suffix, queue)
 
         # api = self.createApiGateway(name_prefix + "Gateway" + name_suffix, api_role, queue)
 
@@ -75,28 +75,32 @@ class HelloCdkStack(Stack):
         dlq = sqs.Queue(
             self, "DLQ",
             queue_name = name,
-            fifo = True
+            fifo = True, 
+            content_based_deduplication = True
         )
         return dlq
 
     def createFifoQueue(self, name, dlq):
-        fifo_queue = sqs.Queue(
+        #Creating FIFO SQS Queue with Dead Letter Queue
+        fifo_queue = sqs.Queue (
             self, "MyFifoQueue",
             queue_name = name,
             fifo = True,
+            content_based_deduplication = True,
             dead_letter_queue = sqs.DeadLetterQueue(
                 max_receive_count = 3,  # Number of retries before moving to DLQ
                 queue = dlq
             )
-        )
+        )   
 
         return fifo_queue
 
     def createLambdaFunction(self, name, queue):
         #Creating Lambda function that will be triggered by the SQS Queue
-        sqs_lambda = lmda.Function(self,'SQSTriggerLambda',
-            handler = 'lambda-handler.handler',
-            runtime = lmda.Runtime.PYTHON_3_7,
+        sqs_lambda = lmda.Function(self, name,
+                                   
+            handler = 'process_messages.handler',
+            runtime = lmda.Runtime.PYTHON_3_10,
             code = lmda.Code.from_asset('lambda'),
         )
 
@@ -110,7 +114,7 @@ class HelloCdkStack(Stack):
         #Create the API GW service role with permissions to call SQS
         rest_api_role = iam.Role(
             self,
-            "RestAPIRole",
+            "RestApiSqsRole",
             assumed_by=iam.ServicePrincipal("apigateway.amazonaws.com"),
             managed_policies=[iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSQSFullAccess")]
         )
