@@ -11,7 +11,7 @@ from constructs import Construct
 
 AWS_ACCOUNT_ID = 730335563531
 name_prefix = "CourseStatusUpdate"
-name_suffix = "-Staging"
+name_suffix = "Staging"
 
 class HelloCdkStack(Stack):
 
@@ -28,7 +28,7 @@ class HelloCdkStack(Stack):
 
         func = self.createLambdaFunction(name_prefix + "Function" + name_suffix, queue)
 
-        # api = self.createApiGateway(name_prefix + "Gateway" + name_suffix, api_role, queue)
+        api = self.createApiGateway(name_prefix + "Gateway" + name_suffix, api_role, queue)
 
 
 
@@ -101,7 +101,7 @@ class HelloCdkStack(Stack):
                                    
             handler = 'process_messages.handler',
             runtime = lmda.Runtime.PYTHON_3_10,
-            code = lmda.Code.from_asset('lambda'),
+            code = lmda.Code.from_asset('hello_cdk/lambda'),
         )
 
         #Create an SQS event source for Lambda
